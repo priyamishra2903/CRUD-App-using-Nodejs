@@ -4,15 +4,21 @@ const courses = [
     {
         "id": 1,
         "name": "Computer",
-        "avaiableslots": 10
+        "enrolledstudents": [{
+            "id": 1,
+            "name": "abc"
+        }],
+        "availableslots": 9
+
     }
 ];
-let students = [
+const students = [
     {
         "id": 1,
-        "name": "Shivu"
+        "name": "Priya"
     }
 ];
+//get all courses
 app.get('/', (req, res) => {
     try {
         res.json(courses)
@@ -23,6 +29,7 @@ app.get('/', (req, res) => {
     }
 })
 
+// create a new course
 app.post('/', (req, res) => {
     try {
         let name = req.body.name;
@@ -36,21 +43,31 @@ app.post('/', (req, res) => {
             res.json({ success: true })
 
         }
-    } catch (err) {
+
+
+    }
+    catch (err) {
         console.error(err.message);
         res.status(500).send('Server Error');
     }
 
 })
 
+
+//enroll a student if slots are available
+
 app.post('/:id/enroll', (req, res) => {
     try {
-        let id = req.params.id;
+        const courseId = req.params.id;
+        const studentId = req.body.id;
 
-        let course = courses.data.find((course) => {
+
+        const course = courses.find((course) => {
             return course.id === parseInt(courseId);
+
         });
-        const student = students.data.find((student) => {
+
+        const student = students.find((student) => {
             return student.id === parseInt(studentId);
         });
         if (!course) {
@@ -60,21 +77,54 @@ app.post('/:id/enroll', (req, res) => {
             return res.json({ error: "student not present" })
         }
 
-        if (course.availableslots == 0) {
+        if (course.availableslots === 0) {
             return res.json({ error: "no empty slots" })
         }
         else {
-            courses.data[courseId - 1].enrolledStudents.push({
+            course.enrolledstudents.push({
                 id: student.id,
                 name: student.name,
             });
-
+            course.availableslots = course.availableslots - 1;
+            console.log(course)
             return res.json({ success: true })
+
+
         }
     } catch (err) {
         console.error(err.message);
         res.status(500).send('Server Error');
     }
 
+})
+// Remove a student from course
+
+app.put('/:id/deregister', (req, res) => {
+    try {
+        const courseId = req.params.id;
+        const student_id = req.body.id;
+        const course = courses.find((course) => {
+            return course.id === parseInt(courseId);
+        });
+        if (!course)
+            return res.json({ error: "this course is currently not present" });
+
+        const enrolledStudents = course.enrolledstudents;
+        const found = enrolledStudents.some((student) => {
+            return student.id === parseInt(student_id);
+        });
+        if (!found)
+            return res.json({ error: "student id doesn't exist" });
+
+        let newlist = course.enrolledstudents.filter(student => student.id !== student_id);
+        course.enrolledstudents = newlist;
+        course.availableslots = course.availableslots + 1;
+        console.log(course)
+        return res.json({ success: true })
+
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Server Error');
+    }
 })
 module.exports = app;
